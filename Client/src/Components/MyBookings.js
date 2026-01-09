@@ -1,6 +1,6 @@
 // src/components/MyBookings.js
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { auth } from '../firebaseConfig';
 
 const MyBookings = () => {
@@ -8,8 +8,16 @@ const MyBookings = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // ⭐️ DYNAMIC URL HELPER ⭐️
+  // If on localhost, point to port 5000 explicitly.
+  // If on the Cloud VM (production), use an empty string to use the relative path.
+  const API_BASE_URL = window.location.hostname === 'localhost' 
+    ? 'http://localhost:5000' 
+    : '';
+    // NOTE: If your Cloud Nginx isn't set up to proxy /api, replace '' above with 'http://34.14.220.38:5000'
+
   // Function to fetch bookings
-  const fetchBookings = async () => {
+  const fetchBookings = useCallback(async () => {
     setLoading(true);
     const user = auth.currentUser;
     if (!user) {
@@ -18,10 +26,12 @@ const MyBookings = () => {
     }
     try {
       const idToken = await user.getIdToken();
-      // FIX: Changed from 'http://localhost:5000/api/...' to '/api/...'
-      const response = await fetch('/api/my-appointments', {
+      
+      // ⭐️ USE THE DYNAMIC BASE URL HERE ⭐️
+      const response = await fetch(`${API_BASE_URL}/api/my-appointments`, {
         headers: { 'Authorization': `Bearer ${idToken}` }
       });
+      
       if (!response.ok) throw new Error('Could not fetch bookings');
       const data = await response.json();
       setBookings(data);
@@ -29,12 +39,12 @@ const MyBookings = () => {
       setError(err.message);
     }
     setLoading(false);
-  };
+  }, [API_BASE_URL]);
 
   // Fetch bookings on component mount
   useEffect(() => {
     fetchBookings();
-  }, []);
+  }, [fetchBookings]);
 
   // Handle Cancel Logic
   const handleCancel = async (bookingId, appointmentTime) => {
@@ -53,8 +63,8 @@ const MyBookings = () => {
       const user = auth.currentUser;
       const idToken = await user.getIdToken();
 
-      // FIX: Changed from 'http://localhost:5000/api/...' to '/api/...'
-      const response = await fetch(`/api/appointment/${bookingId}`, {
+      // ⭐️ USE THE DYNAMIC BASE URL HERE ⭐️
+      const response = await fetch(`${API_BASE_URL}/api/appointment/${bookingId}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${idToken}` }
       });

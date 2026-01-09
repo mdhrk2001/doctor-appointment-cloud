@@ -13,6 +13,15 @@ const BookingModal = ({ doctor, onClose, onBookingSuccess }) => {
   // Get today's date to prevent booking in the past
   const today = new Date().toISOString().split('T')[0];
 
+  // ⭐️ DYNAMIC URL HELPER ⭐️
+  // If we are on localhost, point to port 5000.
+  // If we are on the Cloud VM (production), use an empty string to use the relative path
+  // (assuming your Cloud setup routes '/api' correctly, or use the public IP with port 5000).
+  const API_BASE_URL = window.location.hostname === 'localhost' 
+    ? 'http://localhost:5000' 
+    : ''; 
+    // NOTE: If your Cloud Nginx isn't set up to proxy /api, replace '' above with 'http://34.14.220.38:5000'
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
@@ -26,8 +35,8 @@ const BookingModal = ({ doctor, onClose, onBookingSuccess }) => {
     try {
       const idToken = await user.getIdToken();
       
-      // FIX: Changed from 'http://localhost:5000/api/...' to '/api/...'
-      const response = await fetch('/api/book-appointment', {
+      // ⭐️ USE THE DYNAMIC BASE URL HERE ⭐️
+      const response = await fetch(`${API_BASE_URL}/api/book-appointment`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

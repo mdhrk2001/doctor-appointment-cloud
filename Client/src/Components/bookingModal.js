@@ -26,7 +26,8 @@ const BookingModal = ({ doctor, onClose, onBookingSuccess }) => {
     try {
       const idToken = await user.getIdToken();
       
-      const response = await fetch('http://localhost:5000/api/book-appointment', {
+      // FIX: Changed from 'http://localhost:5000/api/...' to '/api/...'
+      const response = await fetch('/api/book-appointment', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

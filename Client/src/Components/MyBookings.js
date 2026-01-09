@@ -1,20 +1,20 @@
 // src/components/MyBookings.js
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { auth } from '../firebaseConfig';
+import React, { useState, useEffect, useCallback } from "react";
+import { auth } from "../firebaseConfig";
 
 const MyBookings = () => {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [sortOrder, setSortOrder] = useState("oldest");
 
   // ⭐️ DYNAMIC URL HELPER ⭐️
   // If on localhost, point to port 5000 explicitly.
   // If on the Cloud VM (production), use an empty string to use the relative path.
-  const API_BASE_URL = window.location.hostname === 'localhost' 
-    ? 'http://localhost:5000' 
-    : '';
-    // NOTE: If your Cloud Nginx isn't set up to proxy /api, replace '' above with 'http://34.14.220.38:5000'
+  const API_BASE_URL =
+    window.location.hostname === "localhost" ? "http://localhost:5000" : "";
+  // NOTE: If your Cloud Nginx isn't set up to proxy /api, replace '' above with 'http://34.14.220.38:5000'
 
   // Function to fetch bookings
   const fetchBookings = useCallback(async () => {
@@ -26,13 +26,13 @@ const MyBookings = () => {
     }
     try {
       const idToken = await user.getIdToken();
-      
+
       // ⭐️ USE THE DYNAMIC BASE URL HERE ⭐️
       const response = await fetch(`${API_BASE_URL}/api/my-appointments`, {
-        headers: { 'Authorization': `Bearer ${idToken}` }
+        headers: { Authorization: `Bearer ${idToken}` },
       });
-      
-      if (!response.ok) throw new Error('Could not fetch bookings');
+
+      if (!response.ok) throw new Error("Could not fetch bookings");
       const data = await response.json();
       setBookings(data);
     } catch (err) {
@@ -49,12 +49,13 @@ const MyBookings = () => {
   // Handle Cancel Logic
   const handleCancel = async (bookingId, appointmentTime) => {
     // Frontend Check: Use '_seconds'
-    const isPast = appointmentTime && new Date(appointmentTime._seconds * 1000) < new Date();
+    const isPast =
+      appointmentTime && new Date(appointmentTime._seconds * 1000) < new Date();
     if (isPast) {
       alert("You cannot cancel a past appointment.");
       return;
     }
-    
+
     if (!window.confirm("Are you sure you want to cancel this appointment?")) {
       return;
     }
@@ -64,19 +65,21 @@ const MyBookings = () => {
       const idToken = await user.getIdToken();
 
       // ⭐️ USE THE DYNAMIC BASE URL HERE ⭐️
-      const response = await fetch(`${API_BASE_URL}/api/appointment/${bookingId}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${idToken}` }
-      });
+      const response = await fetch(
+        `${API_BASE_URL}/api/appointment/${bookingId}`,
+        {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${idToken}` },
+        }
+      );
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(errorText || 'Failed to cancel.');
+        throw new Error(errorText || "Failed to cancel.");
       }
 
-      alert('Appointment canceled successfully.');
+      alert("Appointment canceled successfully.");
       fetchBookings(); // Refresh the list
-
     } catch (err) {
       alert(`Error: ${err.message}`);
     }
@@ -90,51 +93,118 @@ const MyBookings = () => {
     }
     // Use '_seconds' to create the date
     return new Date(timestamp._seconds * 1000).toLocaleString(undefined, {
-      dateStyle: 'medium',
-      timeStyle: 'short'
+      dateStyle: "medium",
+      timeStyle: "short",
     });
   };
+
+  // ⭐️ SORTING LOGIC ⭐️
+  const sortedBookings = [...bookings].sort((a, b) => {
+    // Get seconds or default to 0
+    const timeA = a.appointmentTime ? a.appointmentTime._seconds : 0;
+    const timeB = b.appointmentTime ? b.appointmentTime._seconds : 0;
+
+    if (sortOrder === "latest") {
+      // Descending (Newest/Furthest date first)
+      return timeB - timeA;
+    } else {
+      // Ascending (Oldest/Earliest date first) - Default request
+      return timeA - timeB;
+    }
+  });
 
   if (loading) return <p>Loading your appointments...</p>;
   if (error) return <p>Error: {error}</p>;
 
   return (
-    <div className="bookings-container">
-      {bookings.length > 0 ? (
-        bookings.map(booking => {
-          // Logical Constraint Check
-          const isPast = booking.appointmentTime && new Date(booking.appointmentTime._seconds * 1000) < new Date();
+    <div>
+      {/* Sort Filter Controls */}
+      <div
+        className="bookings-header"
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: "1rem",
+          marginLeft: "85%",
+        }}
+      >
+        <div style={{ marginTop: "-30px" }}>
+          <label
+            htmlFor="sortOrder"
+            style={{
+              fontSize: "0.9rem",
+              marginRight: "10px",
+              fontWeight: "bold",
+            }}
+          >
+            Sort by:
+          </label>
+          <select
+            id="sortOrder"
+            value={sortOrder}
+            onChange={(e) => setSortOrder(e.target.value)}
+            style={{
+              fontSize: "0.8rem",
+              padding: "4px",
+              borderRadius: "4px",
+              marginTop: "5px",
+            }}
+          >
+            <option value="oldest">Earliest Date</option>
+            <option value="latest">Furthest Date</option>
+          </select>
+        </div>
+      </div>
+      <div className="bookings-container">
+        {sortedBookings.length > 0 ? (
+          sortedBookings.map((booking) => {
+            // Logical Constraint Check
+            const isPast =
+              booking.appointmentTime &&
+              new Date(booking.appointmentTime._seconds * 1000) < new Date();
 
-          return (
-            <div key={booking.id} className="booking-card">
-              
-              <h4>{`Appointment with Dr. ${booking.doctorName || "Dr. [Name Placeholder]"}`}</h4>
-              
-              <p><strong>Date:</strong> {formatTime(booking.appointmentTime)}</p>
-              
-              <p><strong>Reason:</strong> {booking.reason || "Not specified"}</p>
-              
-              <div className="booking-footer">
-                <span className={`booking-status ${booking.status}`}>
-                  {booking.status}
-                </span>
+            return (
+              <div key={booking.id} className="booking-card">
+                <h4>{`Appointment with Dr. ${
+                  booking.doctorName || "Dr. [Name Placeholder]"
+                }`}</h4>
 
-                <button 
-                  className="cancel-btn"
-                  onClick={() => handleCancel(booking.id, booking.appointmentTime)}
-                  disabled={isPast}
-                  title={isPast ? "You cannot cancel a past appointment" : "Cancel appointment"}
-                >
-                  Cancel
-                </button>
+                <p>
+                  <strong>Date:</strong> {formatTime(booking.appointmentTime)}
+                </p>
+
+                <p>
+                  <strong>Reason:</strong> {booking.reason || "Not specified"}
+                </p>
+
+                <div className="booking-footer">
+                  <span className={`booking-status ${booking.status}`}>
+                    {booking.status}
+                  </span>
+
+                  <button
+                    className="cancel-btn"
+                    onClick={() =>
+                      handleCancel(booking.id, booking.appointmentTime)
+                    }
+                    disabled={isPast}
+                    title={
+                      isPast
+                        ? "You cannot cancel a past appointment"
+                        : "Cancel appointment"
+                    }
+                  >
+                    Cancel
+                  </button>
+                </div>
               </div>
-
-            </div>
-          );
-        })
-      ) : (
-        <p>You have no appointments.</p>
-      )}
+            );
+          })
+        ) : (
+          <p>You have no appointments.</p>
+        )}
+      </div>
     </div>
   );
 };

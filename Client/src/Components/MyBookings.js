@@ -18,7 +18,8 @@ const MyBookings = () => {
     }
     try {
       const idToken = await user.getIdToken();
-      const response = await fetch('http://localhost:5000/api/my-appointments', {
+      // FIX: Changed from 'http://localhost:5000/api/...' to '/api/...'
+      const response = await fetch('/api/my-appointments', {
         headers: { 'Authorization': `Bearer ${idToken}` }
       });
       if (!response.ok) throw new Error('Could not fetch bookings');
@@ -52,7 +53,8 @@ const MyBookings = () => {
       const user = auth.currentUser;
       const idToken = await user.getIdToken();
 
-      const response = await fetch(`http://localhost:5000/api/appointment/${bookingId}`, {
+      // FIX: Changed from 'http://localhost:5000/api/...' to '/api/...'
+      const response = await fetch(`/api/appointment/${bookingId}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${idToken}` }
       });
@@ -70,7 +72,7 @@ const MyBookings = () => {
     }
   };
 
-  // ⭐️ CORRECTED HELPER FUNCTION ⭐️
+  // Helper Function for formatting dates
   const formatTime = (timestamp) => {
     // Check for '_seconds' (with an underscore)
     if (!timestamp || !timestamp._seconds) {
@@ -90,7 +92,7 @@ const MyBookings = () => {
     <div className="bookings-container">
       {bookings.length > 0 ? (
         bookings.map(booking => {
-          // Logical Constraint Check (also needs '_seconds')
+          // Logical Constraint Check
           const isPast = booking.appointmentTime && new Date(booking.appointmentTime._seconds * 1000) < new Date();
 
           return (
@@ -98,7 +100,6 @@ const MyBookings = () => {
               
               <h4>{`Appointment with Dr. ${booking.doctorName || "Dr. [Name Placeholder]"}`}</h4>
               
-              {/* This will now work */}
               <p><strong>Date:</strong> {formatTime(booking.appointmentTime)}</p>
               
               <p><strong>Reason:</strong> {booking.reason || "Not specified"}</p>
